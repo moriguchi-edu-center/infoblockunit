@@ -81,11 +81,21 @@ body {
   overflow: hidden;
   background: #fff;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  -webkit-user-drag: element;
+  user-drag: element;
 }
 
 .gallery-item:hover {
   transform: translateY(-4px);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+/* タブレット用：タッチドラッグ中の見た目 */
+.gallery-item.is-touch-dragging {
+  opacity: 0.85;
+  transform: scale(1.05);
+  z-index: 100;
+  position: relative;
 }
 
 .gallery-item:focus {
@@ -776,10 +786,18 @@ body {
 }
 .planner-card-title {
   font-size: 0.6rem;
+  line-height: 1.3;
   font-weight: 600;
   color: #111827;
   text-align: center;
   padding: 0 0.05rem;
+  min-height: 2.6em;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  word-break: break-all;
 }
 
 @media (max-width: 800px) {
@@ -1076,6 +1094,16 @@ body {
   var plannerImportCancelBtn = document.getElementById("plannerImportCancel");
   var plannerImportAppendMode = false;
   var currentGalleryMode = "all";
+  /* タブレット用タッチドラッグの状態（イベント委譲で1セットだけ使用） */
+  var touchDragIndex = null;
+  var touchDragWrap = null;
+  var touchDragStartX = 0;
+  var touchDragStartY = 0;
+  var touchIsDragging = false;
+  var lastTouchX = 0;
+  var lastTouchY = 0;
+  var skipNextClick = false;
+  var TOUCH_DRAG_THRESHOLD = 15;
 
   function openPopup(item) {
     var displayTitle = item.title || item.lesson_plan || "";
@@ -1241,6 +1269,92 @@ body {
     });
   }
 
+  function clearDropzoneOverState() {
+    plannerGrades.querySelectorAll(".planner-dropzone.is-over").forEach(function (dz) {
+      dz.classList.remove("is-over");
+    });
+  }
+
+  function getDropzoneAt(clientX, clientY) {
+    var el = document.elementFromPoint(clientX, clientY);
+    return el ? el.closest(".planner-dropzone") : null;
+  }
+
+  function addCardToDropzoneByIndex(dz, index) {
+    var idx = typeof index === "string" ? parseInt(index, 10) : index;
+    if (isNaN(idx) || !data[idx]) return;
+    var item = data[idx];
+    var card = createPlannerCard(item);
+    dz.appendChild(card);
+  }
+
+  function clearTouchDragState() {
+    if (touchDragWrap) touchDragWrap.classList.remove("is-touch-dragging");
+    clearDropzoneOverState();
+    touchDragWrap = null;
+    touchDragIndex = null;
+    touchIsDragging = false;
+  }
+
+  /* タブレット用：一覧コンテナにタッチを1セットだけ委譲（PCでは呼ばず負荷ゼロ） */
+  /* Safari/iOS では touchstart で preventDefault しないと touchmove が届かないため、タップは touchend で開く */
+  function initTouchDelegation() {
+    galleryEl.addEventListener("touchstart", function (e) {
+      if (e.touches.length !== 1) return;
+      var wrap = e.target.closest(".gallery-item");
+      if (!wrap || wrap.dataset.index === undefined) return;
+      var t = e.touches[0];
+      clearTouchDragState();
+      touchDragWrap = wrap;
+      touchDragIndex = parseInt(wrap.dataset.index, 10);
+      touchDragStartX = t.clientX;
+      touchDragStartY = t.clientY;
+      lastTouchX = t.clientX;
+      lastTouchY = t.clientY;
+      e.preventDefault();
+    }, { passive: false });
+    galleryEl.addEventListener("touchmove", function (e) {
+      if (e.touches.length !== 1 || touchDragIndex === null) return;
+      var t = e.touches[0];
+      lastTouchX = t.clientX;
+      lastTouchY = t.clientY;
+      if (!touchIsDragging) {
+        var dx = t.clientX - touchDragStartX;
+        var dy = t.clientY - touchDragStartY;
+        if (dx * dx + dy * dy > TOUCH_DRAG_THRESHOLD * TOUCH_DRAG_THRESHOLD) {
+          touchIsDragging = true;
+          if (touchDragWrap) touchDragWrap.classList.add("is-touch-dragging");
+        }
+      }
+      if (touchIsDragging) {
+        e.preventDefault();
+        clearDropzoneOverState();
+        var dz = getDropzoneAt(t.clientX, t.clientY);
+        if (dz) dz.classList.add("is-over");
+      }
+    }, { passive: false });
+    galleryEl.addEventListener("touchend", function (e) {
+      if (e.changedTouches.length !== 1) return;
+      var t = e.changedTouches[0];
+      var wasDrag = touchIsDragging && touchDragIndex !== null;
+      if (wasDrag) {
+        var dz = getDropzoneAt(t.clientX, t.clientY);
+        if (dz) {
+          addCardToDropzoneByIndex(dz, touchDragIndex);
+          skipNextClick = true;
+        }
+      } else if (touchDragIndex !== null && data[touchDragIndex]) {
+        openPopup(data[touchDragIndex]);
+        skipNextClick = true;
+      }
+      if (wasDrag || touchDragIndex !== null) e.preventDefault();
+      clearTouchDragState();
+    }, { passive: false });
+    galleryEl.addEventListener("touchcancel", function () {
+      clearTouchDragState();
+    }, { passive: true });
+  }
+
   function getPlannerState() {
     var state = [];
     var gradeSections = plannerGrades.querySelectorAll(".planner-grade");
@@ -1369,17 +1483,18 @@ body {
   }
 
   function createGalleryButton(item, index) {
-      var wrap = document.createElement("button");
-      wrap.type = "button";
+      var wrap = document.createElement("div");
       wrap.className = "gallery-item";
+      wrap.setAttribute("role", "button");
+      wrap.setAttribute("tabindex", "0");
+      wrap.setAttribute("draggable", "true");
       var displayTitle = item.title || item.lesson_plan || "";
       wrap.setAttribute("aria-label", displayTitle + "の説明を見る");
       if (item.image) {
-        wrap.innerHTML = "<img class=\"gallery-thumb\" src=\"" + item.image + "\" alt=\"\" loading=\"lazy\"><span class=\"gallery-label\">" + escapeHtml(displayTitle) + "</span>";
+        wrap.innerHTML = "<img class=\"gallery-thumb\" src=\"" + item.image + "\" alt=\"\" loading=\"lazy\" draggable=\"false\"><span class=\"gallery-label\">" + escapeHtml(displayTitle) + "</span>";
       } else {
         wrap.innerHTML = "<div class=\"gallery-thumb gallery-thumb-placeholder\">画像がありません</div><span class=\"gallery-label\">" + escapeHtml(displayTitle) + "</span>";
       }
-      wrap.draggable = true;
       wrap.dataset.index = String(index);
       wrap.addEventListener("dragstart", function (e) {
         if (e.dataTransfer) {
@@ -1387,7 +1502,20 @@ body {
           e.dataTransfer.setData("text/plain", String(index));
         }
       });
-      wrap.addEventListener("click", function () { openPopup(item); });
+      wrap.addEventListener("click", function (e) {
+        if (skipNextClick) {
+          skipNextClick = false;
+          e.preventDefault();
+          return;
+        }
+        openPopup(item);
+      });
+      wrap.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          openPopup(item);
+        }
+      });
       return wrap;
   }
 
@@ -1921,6 +2049,9 @@ body {
   if (data.length > 0) {
     initPlanner();
     renderGallery();
+    if ("ontouchstart" in window || (navigator.maxTouchPoints && navigator.maxTouchPoints > 0)) {
+      initTouchDelegation();
+    }
   } else {
     galleryEl.innerHTML = "<p style=\"text-align:center;color:#64748b;\">データがありません。</p>";
   }
