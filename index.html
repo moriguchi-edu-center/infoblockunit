@@ -92,6 +92,22 @@ body {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
 }
 
+/* ドラッグ中にマウスについてくるゴースト（setDragImage 用） */
+.gallery-item-drag-ghost {
+  position: fixed;
+  left: -9999px;
+  top: 0;
+  width: 120px;
+  opacity: 0.95;
+  transform: scale(1.08);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+  pointer-events: none;
+  z-index: 9999;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fff;
+}
+
 /* タブレット用：タッチドラッグ中の見た目 */
 .gallery-item.is-touch-dragging {
   opacity: 0.85;
@@ -1508,6 +1524,15 @@ body {
         if (e.dataTransfer) {
           e.dataTransfer.effectAllowed = "copy";
           e.dataTransfer.setData("text/plain", String(index));
+          var ghost = wrap.cloneNode(true);
+          ghost.classList.add("gallery-item-drag-ghost");
+          ghost.style.width = wrap.offsetWidth + "px";
+          document.body.appendChild(ghost);
+          var rect = wrap.getBoundingClientRect();
+          var offsetX = e.clientX - rect.left;
+          var offsetY = e.clientY - rect.top;
+          e.dataTransfer.setDragImage(ghost, offsetX, offsetY);
+          setTimeout(function () { ghost.remove(); }, 0);
         }
       });
       wrap.addEventListener("click", function (e) {
