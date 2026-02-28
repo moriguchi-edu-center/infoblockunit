@@ -81,6 +81,8 @@ body {
   overflow: hidden;
   background: #fff;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+.gallery-item.gallery-item-draggable-div {
   -webkit-user-drag: element;
   user-drag: element;
 }
@@ -1104,6 +1106,7 @@ body {
   var lastTouchY = 0;
   var skipNextClick = false;
   var TOUCH_DRAG_THRESHOLD = 15;
+  var isSafari = /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent);
 
   function openPopup(item) {
     var displayTitle = item.title || item.lesson_plan || "";
@@ -1483,15 +1486,20 @@ body {
   }
 
   function createGalleryButton(item, index) {
-      var wrap = document.createElement("div");
-      wrap.className = "gallery-item";
-      wrap.setAttribute("role", "button");
-      wrap.setAttribute("tabindex", "0");
-      wrap.setAttribute("draggable", "true");
+      var wrap = document.createElement(isSafari ? "div" : "button");
+      wrap.className = "gallery-item" + (isSafari ? " gallery-item-draggable-div" : "");
       var displayTitle = item.title || item.lesson_plan || "";
       wrap.setAttribute("aria-label", displayTitle + "の説明を見る");
+      if (isSafari) {
+        wrap.setAttribute("role", "button");
+        wrap.setAttribute("tabindex", "0");
+        wrap.setAttribute("draggable", "true");
+      } else {
+        wrap.type = "button";
+        wrap.draggable = true;
+      }
       if (item.image) {
-        wrap.innerHTML = "<img class=\"gallery-thumb\" src=\"" + item.image + "\" alt=\"\" loading=\"lazy\" draggable=\"false\"><span class=\"gallery-label\">" + escapeHtml(displayTitle) + "</span>";
+        wrap.innerHTML = "<img class=\"gallery-thumb\" src=\"" + item.image + "\" alt=\"\" loading=\"lazy\"" + (isSafari ? " draggable=\"false\"" : "") + "><span class=\"gallery-label\">" + escapeHtml(displayTitle) + "</span>";
       } else {
         wrap.innerHTML = "<div class=\"gallery-thumb gallery-thumb-placeholder\">画像がありません</div><span class=\"gallery-label\">" + escapeHtml(displayTitle) + "</span>";
       }
@@ -1510,12 +1518,14 @@ body {
         }
         openPopup(item);
       });
-      wrap.addEventListener("keydown", function (e) {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          openPopup(item);
-        }
-      });
+      if (isSafari) {
+        wrap.addEventListener("keydown", function (e) {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            openPopup(item);
+          }
+        });
+      }
       return wrap;
   }
 
