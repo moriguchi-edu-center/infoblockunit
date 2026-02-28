@@ -60,7 +60,7 @@ body {
 
 /* メイン・ギャラリー */
 .main {
-  padding: 1.5rem 1rem 3rem;
+  padding: 1.5rem 1rem 9rem;
   max-width: 1400px;
   margin: 0 auto;
 }
@@ -90,6 +90,13 @@ body {
 .gallery-item:hover {
   transform: translateY(-4px);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+/* マウスダウン直後の見た目（ドラッグ発火前でも「つかんだ」と分かるように） */
+.gallery-item-drag-pending {
+  opacity: 0.85;
+  transform: scale(0.98);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
 }
 
 /* ドラッグ中にマウスについてくるゴースト（setDragImage 用） */
@@ -732,6 +739,148 @@ body {
   border-color: #2563eb;
   background: #eff6ff;
 }
+
+/* 画面最下部の常時表示ドラッグエリア */
+.bottom-drag-area {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 500;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 -4px 20px rgba(15, 23, 42, 0.1);
+  padding: 0.6rem 1rem 0.75rem;
+  border-top: 1px solid #e2e8f0;
+}
+.bottom-drag-grade-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.5rem;
+  align-items: center;
+}
+.bottom-drag-grade-buttons span {
+  font-size: 0.8rem;
+  color: #64748b;
+  margin-right: 0.25rem;
+}
+.bottom-drag-grade-btn {
+  border-radius: 999px;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 0.8rem;
+  padding: 0.25rem 0.65rem;
+  cursor: pointer;
+}
+.bottom-drag-grade-btn:hover {
+  background: #e2e8f0;
+}
+.bottom-drag-grade-btn.is-active {
+  background: #3b82f6;
+  color: #fff;
+  border-color: #2563eb;
+}
+.bottom-drag-terms {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+.bottom-drag-term-title {
+  margin: 0 0 0.2rem 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #334155;
+}
+.bottom-drag-area .planner-dropzone {
+  min-height: 56px;
+}
+
+/* ポップアップ：イラスト下の登録（右寄せ） */
+.popup-register-wrap {
+  margin-top: 0.5rem;
+  padding: 0 0.25rem 0.15rem;
+  text-align: right;
+}
+.popup-register-btn {
+  display: inline-block;
+  padding: 0.3rem 0.6rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #fff;
+  background: #22c55e;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.popup-register-btn:hover {
+  background: #16a34a;
+}
+.popup-register-form {
+  margin-top: 0.5rem;
+  padding: 0.5rem 0.25rem 0.25rem;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  display: none;
+}
+.popup-register-form.is-open {
+  display: block;
+}
+.popup-register-form p {
+  margin: 0 0 0.4rem 0;
+  font-size: 0.75rem;
+  color: #64748b;
+}
+.popup-register-form-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+.popup-register-form-row label {
+  font-size: 0.75rem;
+  color: #475569;
+}
+.popup-register-form-row select {
+  font-size: 0.8rem;
+  padding: 0.25rem 0.4rem;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+}
+.popup-register-form-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.35rem;
+}
+.popup-register-confirm-btn {
+  padding: 0.3rem 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #fff;
+  background: #22c55e;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.popup-register-confirm-btn:hover {
+  background: #16a34a;
+}
+.popup-register-cancel-btn {
+  padding: 0.3rem 0.65rem;
+  font-size: 0.75rem;
+  background: #e2e8f0;
+  color: #475569;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.popup-register-cancel-btn:hover {
+  background: #cbd5e1;
+}
+
 .planner-card {
   flex: 0 0 auto;
   width: 72px;
@@ -1067,6 +1216,36 @@ body {
           <img id="popupImage" class="popup-image" src="" alt="">
           <div id="popupNoImage" class="popup-no-image" style="display: none;">画像がありません</div>
           <p id="popupMeta" class="popup-meta"></p>
+          <div class="popup-register-wrap">
+            <button type="button" id="popupRegisterBtn" class="popup-register-btn">マイカードに登録</button>
+            <div id="popupRegisterForm" class="popup-register-form" aria-hidden="true">
+              <p>何年生の何学期に登録しますか？</p>
+              <div class="popup-register-form-row">
+                <label for="popupRegisterGrade">学年</label>
+                <select id="popupRegisterGrade">
+                  <option value="1">1年</option>
+                  <option value="2">2年</option>
+                  <option value="3">3年</option>
+                  <option value="4">4年</option>
+                  <option value="5">5年</option>
+                  <option value="6">6年</option>
+                  <option value="7">7年（中１）</option>
+                  <option value="8">8年（中２）</option>
+                  <option value="9">9年（中３）</option>
+                </select>
+                <label for="popupRegisterTerm">学期</label>
+                <select id="popupRegisterTerm">
+                  <option value="term1">1学期</option>
+                  <option value="term2">2学期</option>
+                  <option value="term3">3学期</option>
+                </select>
+              </div>
+              <div class="popup-register-form-buttons">
+                <button type="button" id="popupRegisterCancel" class="popup-register-cancel-btn">キャンセル</button>
+                <button type="button" id="popupRegisterConfirm" class="popup-register-confirm-btn">登録する</button>
+              </div>
+            </div>
+          </div>
         </div>
         <div class="popup-links">
           <p>「授業展開案」は一例です。<a href="https://notebooklm.google.com/notebook/405e60db-af04-4fcb-bd3d-1a8d362d686e" target="_blank" rel="noopener noreferrer">授業設計ガイド（notebookLM）</a>でもっと提案がもらえます！！</p>
@@ -1075,6 +1254,14 @@ body {
       </div>
     </div>
   </div>
+
+  <aside id="bottomDragArea" class="bottom-drag-area no-print" aria-label="ドラッグエリア">
+    <div class="bottom-drag-grade-buttons">
+      <span>学年:</span>
+      <div id="bottomDragGradeButtons"></div>
+    </div>
+    <div class="bottom-drag-terms" id="bottomDragTerms"></div>
+  </aside>
 
   <script src="data.js"></script>
   <script>
@@ -1085,6 +1272,12 @@ body {
   var popupEl = document.getElementById("popup");
   var popupBackdrop = document.getElementById("popupBackdrop");
   var popupClose = document.getElementById("popupClose");
+  var popupRegisterBtn = document.getElementById("popupRegisterBtn");
+  var popupRegisterForm = document.getElementById("popupRegisterForm");
+  var popupRegisterGrade = document.getElementById("popupRegisterGrade");
+  var popupRegisterTerm = document.getElementById("popupRegisterTerm");
+  var popupRegisterConfirm = document.getElementById("popupRegisterConfirm");
+  var popupRegisterCancel = document.getElementById("popupRegisterCancel");
   var popupTitle = document.getElementById("popupTitle");
   var popupMeta = document.getElementById("popupMeta");
   var popupDescription = document.getElementById("popupDescription");
@@ -1123,8 +1316,12 @@ body {
   var skipNextClick = false;
   var TOUCH_DRAG_THRESHOLD = 15;
   var isSafari = /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent);
+  var currentBottomGrade = 1;
+  var currentPopupItem = null;
+  var bottomBarDropzones = null;
 
   function openPopup(item) {
+    currentPopupItem = item;
     var displayTitle = item.title || item.lesson_plan || "";
     popupTitle.textContent = displayTitle;
     var cats = [];
@@ -1164,6 +1361,10 @@ body {
     popupEl.classList.add("is-open");
     popupEl.setAttribute("aria-hidden", "false");
     document.body.style.overflow = "hidden";
+    if (popupRegisterForm) {
+      popupRegisterForm.classList.remove("is-open");
+      popupRegisterForm.setAttribute("aria-hidden", "true");
+    }
     popupClose.focus();
   }
 
@@ -1284,14 +1485,128 @@ body {
         var item = data[idx];
         var card = createPlannerCard(item);
         dz.appendChild(card);
+        if (!dz.closest("#bottomDragArea") && bottomBarDropzones) {
+          var g = parseInt(dz.dataset.grade, 10);
+          if (g === currentBottomGrade) {
+            var termKey = dz.dataset.term;
+            if (bottomBarDropzones[termKey]) {
+              var barCard = createPlannerCard(item, function (it) {
+                removeCardFromAccordion(currentBottomGrade, termKey, it);
+              });
+              bottomBarDropzones[termKey].appendChild(barCard);
+            }
+          }
+        }
       });
     });
   }
 
   function clearDropzoneOverState() {
-    plannerGrades.querySelectorAll(".planner-dropzone.is-over").forEach(function (dz) {
+    document.querySelectorAll(".planner-dropzone.is-over").forEach(function (dz) {
       dz.classList.remove("is-over");
     });
+  }
+
+  function getAccordionDropzone(grade, termKey) {
+    var gradeSection = null;
+    plannerGrades.querySelectorAll(".planner-grade").forEach(function (section) {
+      var t = section.querySelector(".planner-grade-title");
+      if (!t) return;
+      var m = (t.textContent || "").match(/^(\d+)/);
+      var g = m ? parseInt(m[1], 10) : NaN;
+      if (g === grade) gradeSection = section;
+    });
+    return gradeSection ? gradeSection.querySelector('.planner-dropzone[data-term="' + termKey + '"]') : null;
+  }
+
+  function removeCardFromAccordion(grade, termKey, item) {
+    var dz = getAccordionDropzone(grade, termKey);
+    if (!dz) return;
+    dz.querySelectorAll(".planner-card").forEach(function (c) {
+      if (c.__item === item) c.remove();
+    });
+  }
+
+  function syncBottomBar() {
+    if (!bottomBarDropzones) return;
+    var terms = [{ key: "term1", label: "1学期" }, { key: "term2", label: "2学期" }, { key: "term3", label: "3学期" }];
+    terms.forEach(function (t) {
+      var dz = bottomBarDropzones[t.key];
+      if (!dz) return;
+      dz.innerHTML = "";
+      var accordionDz = getAccordionDropzone(currentBottomGrade, t.key);
+      if (!accordionDz) return;
+      accordionDz.querySelectorAll(".planner-card").forEach(function (c) {
+        if (!c.__item) return;
+        var card = createPlannerCard(c.__item, function (item) {
+          removeCardFromAccordion(currentBottomGrade, t.key, item);
+        });
+        dz.appendChild(card);
+      });
+    });
+  }
+
+  function initBottomDragArea() {
+    var grades = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+    var terms = [{ key: "term1", label: "1学期" }, { key: "term2", label: "2学期" }, { key: "term3", label: "3学期" }];
+    var btnContainer = document.getElementById("bottomDragGradeButtons");
+    var termsContainer = document.getElementById("bottomDragTerms");
+    if (!btnContainer || !termsContainer) return;
+    grades.forEach(function (g) {
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "bottom-drag-grade-btn" + (g === currentBottomGrade ? " is-active" : "");
+      btn.dataset.grade = String(g);
+      btn.textContent = g <= 6 ? g + "年" : g + "年" + (g === 7 ? "（中１）" : g === 8 ? "（中２）" : "（中３）");
+      btn.addEventListener("click", function () {
+        currentBottomGrade = g;
+        btnContainer.querySelectorAll(".bottom-drag-grade-btn").forEach(function (b) {
+          b.classList.toggle("is-active", parseInt(b.dataset.grade, 10) === g);
+        });
+        bottomBarDropzones.term1.dataset.grade = String(g);
+        bottomBarDropzones.term2.dataset.grade = String(g);
+        bottomBarDropzones.term3.dataset.grade = String(g);
+        syncBottomBar();
+      });
+      btnContainer.appendChild(btn);
+    });
+    bottomBarDropzones = {};
+    terms.forEach(function (t) {
+      var col = document.createElement("div");
+      var title = document.createElement("p");
+      title.className = "bottom-drag-term-title";
+      title.textContent = t.label;
+      var dz = document.createElement("div");
+      dz.className = "planner-dropzone";
+      dz.dataset.grade = String(currentBottomGrade);
+      dz.dataset.term = t.key;
+      col.appendChild(title);
+      col.appendChild(dz);
+      termsContainer.appendChild(col);
+      bottomBarDropzones[t.key] = dz;
+      dz.addEventListener("dragover", function (e) {
+        e.preventDefault();
+        dz.classList.add("is-over");
+      });
+      dz.addEventListener("dragleave", function () {
+        dz.classList.remove("is-over");
+      });
+      dz.addEventListener("drop", function (e) {
+        e.preventDefault();
+        dz.classList.remove("is-over");
+        var indexStr = e.dataTransfer && e.dataTransfer.getData("text/plain");
+        var idx = indexStr ? parseInt(indexStr, 10) : NaN;
+        if (isNaN(idx) || !data[idx]) return;
+        var item = data[idx];
+        var cardBar = createPlannerCard(item, function (it) {
+          removeCardFromAccordion(currentBottomGrade, t.key, it);
+        });
+        dz.appendChild(cardBar);
+        var accordionDz = getAccordionDropzone(currentBottomGrade, t.key);
+        if (accordionDz) accordionDz.appendChild(createPlannerCard(item));
+      });
+    });
+    syncBottomBar();
   }
 
   function getDropzoneAt(clientX, clientY) {
@@ -1303,8 +1618,17 @@ body {
     var idx = typeof index === "string" ? parseInt(index, 10) : index;
     if (isNaN(idx) || !data[idx]) return;
     var item = data[idx];
-    var card = createPlannerCard(item);
-    dz.appendChild(card);
+    if (dz.closest("#bottomDragArea") && bottomBarDropzones) {
+      var termKey = dz.dataset.term;
+      var cardBar = createPlannerCard(item, function (it) {
+        removeCardFromAccordion(currentBottomGrade, termKey, it);
+      });
+      dz.appendChild(cardBar);
+      var accordionDz = getAccordionDropzone(currentBottomGrade, termKey);
+      if (accordionDz) accordionDz.appendChild(createPlannerCard(item));
+    } else {
+      dz.appendChild(createPlannerCard(item));
+    }
   }
 
   function clearTouchDragState() {
@@ -1407,10 +1731,14 @@ body {
   }
 
   function clearPlanner() {
-    var dropzones = plannerGrades.querySelectorAll(".planner-dropzone");
-    dropzones.forEach(function (dz) {
+    plannerGrades.querySelectorAll(".planner-dropzone").forEach(function (dz) {
       dz.innerHTML = "";
     });
+    if (bottomBarDropzones) {
+      if (bottomBarDropzones.term1) bottomBarDropzones.term1.innerHTML = "";
+      if (bottomBarDropzones.term2) bottomBarDropzones.term2.innerHTML = "";
+      if (bottomBarDropzones.term3) bottomBarDropzones.term3.innerHTML = "";
+    }
   }
 
   function setPlannerState(state, append) {
@@ -1448,9 +1776,10 @@ body {
       var card = createPlannerCard(item);
       dz.appendChild(card);
     });
+    if (bottomBarDropzones) syncBottomBar();
   }
 
-  function createPlannerCard(item) {
+  function createPlannerCard(item, onRemoveFromOther) {
     var card = document.createElement("div");
     card.className = "planner-card";
     card.__item = item;
@@ -1474,7 +1803,7 @@ body {
     remove.textContent = "×";
     remove.addEventListener("click", function (e) {
       e.stopPropagation();
-      var parent = card.parentNode;
+      if (typeof onRemoveFromOther === "function") onRemoveFromOther(item);
       card.remove();
     });
     card.appendChild(remove);
@@ -1520,7 +1849,22 @@ body {
         wrap.innerHTML = "<div class=\"gallery-thumb gallery-thumb-placeholder\">画像がありません</div><span class=\"gallery-label\">" + escapeHtml(displayTitle) + "</span>";
       }
       wrap.dataset.index = String(index);
+      wrap.addEventListener("mousedown", function () {
+        wrap.classList.add("gallery-item-drag-pending");
+        var cleanup = function () {
+          wrap.classList.remove("gallery-item-drag-pending");
+          document.removeEventListener("mouseup", cleanup);
+          wrap._dragPendingCleanup = null;
+        };
+        wrap._dragPendingCleanup = cleanup;
+        document.addEventListener("mouseup", cleanup);
+      });
       wrap.addEventListener("dragstart", function (e) {
+        wrap.classList.remove("gallery-item-drag-pending");
+        if (wrap._dragPendingCleanup) {
+          document.removeEventListener("mouseup", wrap._dragPendingCleanup);
+          wrap._dragPendingCleanup = null;
+        }
         if (e.dataTransfer) {
           e.dataTransfer.effectAllowed = "copy";
           e.dataTransfer.setData("text/plain", String(index));
@@ -1533,6 +1877,13 @@ body {
           var offsetY = e.clientY - rect.top;
           e.dataTransfer.setDragImage(ghost, offsetX, offsetY);
           setTimeout(function () { ghost.remove(); }, 0);
+        }
+      });
+      wrap.addEventListener("dragend", function () {
+        wrap.classList.remove("gallery-item-drag-pending");
+        if (wrap._dragPendingCleanup) {
+          document.removeEventListener("mouseup", wrap._dragPendingCleanup);
+          wrap._dragPendingCleanup = null;
         }
       });
       wrap.addEventListener("click", function (e) {
@@ -2077,12 +2428,50 @@ body {
 
   popupBackdrop.addEventListener("click", closePopup);
   popupClose.addEventListener("click", closePopup);
+  if (popupRegisterBtn) {
+    popupRegisterBtn.addEventListener("click", function () {
+      if (!currentPopupItem) return;
+      if (popupRegisterForm && popupRegisterGrade && popupRegisterTerm) {
+        popupRegisterGrade.value = String(currentBottomGrade);
+        popupRegisterTerm.value = "term1";
+        popupRegisterForm.classList.add("is-open");
+        popupRegisterForm.setAttribute("aria-hidden", "false");
+      }
+    });
+  }
+  if (popupRegisterConfirm && popupRegisterGrade && popupRegisterTerm) {
+    popupRegisterConfirm.addEventListener("click", function () {
+      if (!currentPopupItem) return;
+      var grade = parseInt(popupRegisterGrade.value, 10);
+      var termKey = popupRegisterTerm.value;
+      if (!grade || !termKey) return;
+      var accordionDz = getAccordionDropzone(grade, termKey);
+      if (accordionDz) accordionDz.appendChild(createPlannerCard(currentPopupItem));
+      if (bottomBarDropzones && grade === currentBottomGrade && bottomBarDropzones[termKey]) {
+        var barCard = createPlannerCard(currentPopupItem, function (it) {
+          removeCardFromAccordion(grade, termKey, it);
+        });
+        bottomBarDropzones[termKey].appendChild(barCard);
+      }
+      if (popupRegisterForm) {
+        popupRegisterForm.classList.remove("is-open");
+        popupRegisterForm.setAttribute("aria-hidden", "true");
+      }
+    });
+  }
+  if (popupRegisterCancel && popupRegisterForm) {
+    popupRegisterCancel.addEventListener("click", function () {
+      popupRegisterForm.classList.remove("is-open");
+      popupRegisterForm.setAttribute("aria-hidden", "true");
+    });
+  }
   document.addEventListener("keydown", function (e) {
     if (e.key === "Escape" && popupEl.classList.contains("is-open")) closePopup();
   });
 
   if (data.length > 0) {
     initPlanner();
+    initBottomDragArea();
     renderGallery();
     if ("ontouchstart" in window || (navigator.maxTouchPoints && navigator.maxTouchPoints > 0)) {
       initTouchDelegation();
