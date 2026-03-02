@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>情報ブロック ミニ探究ユニット</title>
+  <title>情報ブロック　ミニ探究ユニット</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;700&display=swap" rel="stylesheet">
@@ -1133,7 +1133,7 @@ body {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  border: 1px solid #e2e8f0;
+  border: 3px solid #e2e8f0;
   border-radius: 8px;
   overflow: hidden;
   background: #fff;
@@ -1154,18 +1154,35 @@ body {
 .print-item .popup-title { margin: 0 0 0.35rem 0; font-size: 1rem; font-weight: 700; color: #0f172a; line-height: 1.3; }
 .print-item .popup-description { margin: 0; font-size: 0.8rem; line-height: 1.5; color: #334155; }
 .print-item .popup-extra { margin-top: 0.35rem; display: grid; gap: 0.35rem; }
-.print-item .popup-extra-block { background: #f8fafc; border-radius: 6px; padding: 0.4rem 0.5rem; border-left: 3px solid #3b82f6; }
+.print-item .popup-extra-block { background: #f8fafc; border-radius: 6px; padding: 0.4rem 0.5rem; border-left: 3px solid #e2e8f0; }
+.print-item.cat-big-katsuyo .popup-extra-block { border-left-color: #fca5a5; }
+.print-item.cat-big-appropriate .popup-extra-block { border-left-color: #86efac; }
+.print-item.cat-big-characteristic .popup-extra-block { border-left-color: #93c5fd; }
 .print-item .popup-extra-label { font-size: 0.65rem; font-weight: 700; color: #64748b; margin: 0 0 0.2rem 0; }
 .print-item .popup-extra-content { margin: 0; font-size: 0.7rem; line-height: 1.45; color: #334155; white-space: pre-line; }
-.print-item .popup-meta { margin-top: 0.3rem; font-size: 0.7rem; text-align: right; color: #64748b; }
+.print-item .popup-meta { margin-top: 0.3rem; font-size: 0.7rem; text-align: center; color: #64748b; }
+.print-item .popup-meta-big { font-weight: bold; }
+.print-item .popup-meta-big.cat-big-katsuyo { color: #dc2626; }
+.print-item .popup-meta-big.cat-big-appropriate { color: #16a34a; }
+.print-item .popup-meta-big.cat-big-characteristic { color: #2563eb; }
 .print-item .popup-image-wrap {
   border-radius: 8px;
   overflow: hidden;
   background: #f1f5f9;
   min-width: 0;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+}
+.print-item .popup-image-wrap .popup-image,
+.print-item .popup-image-wrap .popup-no-image { flex: 0 0 auto; }
+.print-item .popup-image-wrap .popup-meta {
+  flex: 0 0 auto;
+  margin-top: 0.25rem;
+  padding-top: 0.25rem;
+  border-top: 1px solid #e2e8f0;
+  text-align: center;
 }
 .print-item .popup-image { display: block; width: 100%; height: auto; max-height: 100%; object-fit: contain; }
 .print-item .popup-no-image {
@@ -1224,13 +1241,16 @@ body {
 }
 .print-summary-card {
   flex: 0 0 auto;
-  width: 70px;
+  width: 92px;
   border-radius: 10px;
-  border: 1px solid #e5e7eb;
+  border: 3px solid #e5e7eb;
   background: #ffffff;
-  padding: 0.18rem 0.18rem 0.22rem;
+  padding: 0.25rem 0.22rem 0.28rem;
   box-shadow: 0 2px 4px rgba(15, 23, 42, 0.08);
 }
+.print-summary-card.cat-big-katsuyo { border-color: #fca5a5 !important; }
+.print-summary-card.cat-big-appropriate { border-color: #86efac !important; }
+.print-summary-card.cat-big-characteristic { border-color: #93c5fd !important; }
 .print-summary-thumb {
   width: 100%;
   aspect-ratio: 1;
@@ -1240,7 +1260,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.55rem;
+  font-size: 0.65rem;
   color: #64748b;
 }
 .print-summary-thumb img {
@@ -1250,8 +1270,8 @@ body {
 }
 .print-summary-title-text {
   display: block;
-  margin-top: 0.12rem;
-  font-size: 0.58rem;
+  margin-top: 0.15rem;
+  font-size: 0.7rem;
   font-weight: 600;
   color: #111827;
   text-align: center;
@@ -2338,6 +2358,8 @@ body {
   function createSummaryCard(item) {
     var card = document.createElement("div");
     card.className = "print-summary-card";
+    var bigCls = bigCategoryClassName(item.big_category);
+    if (bigCls) card.classList.add(bigCls);
     var thumb = document.createElement("div");
     thumb.className = "print-summary-thumb";
     if (item.image) {
@@ -2429,7 +2451,15 @@ body {
     if (cats.length) {
       var metaEl = document.createElement("p");
       metaEl.className = "popup-meta";
-      metaEl.textContent = cats.join(" / ");
+      if (bigCls && cats.length > 0) {
+        var metaBigSpan = document.createElement("span");
+        metaBigSpan.className = "popup-meta-big " + bigCls;
+        metaBigSpan.textContent = cats[0];
+        metaEl.appendChild(metaBigSpan);
+        if (cats.length > 1) metaEl.appendChild(document.createTextNode(" / " + cats.slice(1).join(" / ")));
+      } else {
+        metaEl.textContent = cats.join(" / ");
+      }
       imgWrap.appendChild(metaEl);
     }
     inner.appendChild(textDiv);
