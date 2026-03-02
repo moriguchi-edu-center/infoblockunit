@@ -84,6 +84,7 @@ body {
   overflow: hidden;
   background: #fff;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border: 2px solid transparent;
 }
 .gallery-item.gallery-item-draggable-div {
   -webkit-user-drag: element;
@@ -199,7 +200,14 @@ body {
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   display: flex;
   flex-direction: column;
+  border-left: 6px solid transparent;
 }
+.popup-content.cat-big-katsuyo { border-left-color: #fca5a5; }
+.popup-content.cat-big-appropriate { border-left-color: #86efac; }
+.popup-content.cat-big-characteristic { border-left-color: #93c5fd; }
+.popup-content.cat-big-katsuyo .popup-extra-block { border-left-color: #fca5a5; }
+.popup-content.cat-big-appropriate .popup-extra-block { border-left-color: #86efac; }
+.popup-content.cat-big-characteristic .popup-extra-block { border-left-color: #93c5fd; }
 
 .popup-close {
   position: absolute;
@@ -258,6 +266,10 @@ body {
   color: #64748b;
   text-align: right;
 }
+.popup-meta-big { font-weight: bold; }
+.popup-meta-big.cat-big-katsuyo { color: #dc2626; }
+.popup-meta-big.cat-big-appropriate { color: #16a34a; }
+.popup-meta-big.cat-big-characteristic { color: #2563eb; }
 
 .popup-extra {
   margin-top: 1rem;
@@ -530,6 +542,29 @@ body {
   margin: 0;
   font-size: 0.9rem;
   color: #475569;
+}
+.planner-balance-hint {
+  margin: 0.25rem 0 0 0;
+  font-size: 0.8rem;
+  color: #64748b;
+  font-style: italic;
+}
+.planner-color-legend {
+  margin: 0.35rem 0 0.6rem 0;
+  font-size: 0.7rem;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.5rem;
+}
+.planner-legend-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  vertical-align: middle;
+  margin-right: 0.15rem;
 }
 .planner-util-btn {
   display: inline-block;
@@ -976,7 +1011,7 @@ body {
   width: 72px;
   max-width: 80px;
   border-radius: 10px;
-  border: 1px solid #e5e7eb;
+  border: 3px solid #e5e7eb;
   background: #ffffff;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
   padding: 0.2rem 0.15rem 0.25rem;
@@ -987,6 +1022,16 @@ body {
   cursor: pointer;
   position: relative;
 }
+
+/* 大項目（情報技術の活用/適切な取り扱い/特性の理解）に合わせた枠線色（パステル） */
+.cat-big-katsuyo { border-color: #fca5a5 !important; }      /* パステル赤 */
+.cat-big-appropriate { border-color: #86efac !important; }  /* パステル緑 */
+.cat-big-characteristic { border-color: #93c5fd !important; } /* パステル青 */
+
+/* 印刷カードは既存の border を上書き */
+.print-item.cat-big-katsuyo { border-color: #fca5a5 !important; }
+.print-item.cat-big-appropriate { border-color: #86efac !important; }
+.print-item.cat-big-characteristic { border-color: #93c5fd !important; }
 .planner-card-remove {
   position: absolute;
   top: -6px;
@@ -1233,6 +1278,7 @@ body {
         <div class="planner-header-text">
           <h2 class="planner-title">マイカード置き場</h2>
           <p class="planner-subtitle">カードをドラッグして、学年・学期ごとのマイスケジュールに登録できます。</p>
+          <p class="planner-balance-hint">各学期にバランスよく配置してみましょう。</p>
         </div>
         <div class="planner-header-actions">
           <button type="button" id="plannerExportCsv" class="planner-util-btn">CSV保存</button>
@@ -1249,6 +1295,7 @@ body {
           </div>
         </div>
       </div>
+      <p class="planner-color-legend" aria-hidden="true">枠の色：<span class="planner-legend-dot" style="background:#fca5a5;"></span>情報技術の活用　<span class="planner-legend-dot" style="background:#86efac;"></span>適切な取り扱い　<span class="planner-legend-dot" style="background:#93c5fd;"></span>特性の理解</p>
       <div id="plannerGrades" class="planner-grades"></div>
     </section>
     <section class="gallery-controls no-print">
@@ -1400,12 +1447,37 @@ body {
   var plannerImportCancelBtn = document.getElementById("plannerImportCancel");
   var plannerImportAppendMode = false;
   var currentGalleryMode = "all";
+
+  function normalizeBigCategory(v) {
+    var s = (v || "").trim();
+    if (!s) return "";
+    // 表記ゆれ吸収
+    if (s === "適切な取扱い") return "適切な取り扱い";
+    return s;
+  }
+
+  function bigCategoryDisplayName(v) {
+    var s = normalizeBigCategory(v);
+    if (s === "活用") return "情報技術の活用";
+    if (s === "適切な取り扱い") return "情報技術の適切な取り扱い";
+    if (s === "特性の理解") return "情報技術の特性の理解";
+    return s;
+  }
+
+  function bigCategoryClassName(v) {
+    var s = normalizeBigCategory(v);
+    if (s === "活用") return "cat-big-katsuyo";
+    if (s === "適切な取り扱い") return "cat-big-appropriate";
+    if (s === "特性の理解") return "cat-big-characteristic";
+    return "";
+  }
   /* タブレット用タッチドラッグの状態（イベント委譲で1セットだけ使用） */
   var touchDragIndex = null;
   var touchDragWrap = null;
   var touchDragStartX = 0;
   var touchDragStartY = 0;
   var touchIsDragging = false;
+  var touchScrollIntent = false; /* 縦スワイプ＝スクロール扱いにしてカード上でもスライドできるように */
   var lastTouchX = 0;
   var lastTouchY = 0;
   var skipNextClick = false;
@@ -1420,13 +1492,23 @@ body {
     var displayTitle = item.title || item.lesson_plan || "";
     popupTitle.textContent = displayTitle;
     var cats = [];
-    if (item.big_category) cats.push(item.big_category);
+    if (item.big_category) cats.push(bigCategoryDisplayName(item.big_category));
     if (item.middle_category) cats.push(item.middle_category);
     if (item.small_category) cats.push(item.small_category);
     if (item.viewpoint) cats.push(item.viewpoint);
     if (cats.length) {
       popupMeta.style.display = "block";
-      popupMeta.textContent = cats.join(" / ");
+      popupMeta.textContent = "";
+      var metaBigCls = bigCategoryClassName(item.big_category);
+      if (metaBigCls && cats.length > 0) {
+        var bigSpan = document.createElement("span");
+        bigSpan.className = "popup-meta-big " + metaBigCls;
+        bigSpan.textContent = cats[0];
+        popupMeta.appendChild(bigSpan);
+        if (cats.length > 1) popupMeta.appendChild(document.createTextNode(" / " + cats.slice(1).join(" / ")));
+      } else {
+        popupMeta.textContent = cats.join(" / ");
+      }
     } else {
       popupMeta.style.display = "none";
       popupMeta.textContent = "";
@@ -1453,6 +1535,12 @@ body {
       popupImage.style.display = "none";
       popupNoImage.style.display = "flex";
     }
+    var popupContent = popupEl.querySelector(".popup-content");
+    if (popupContent) {
+      popupContent.classList.remove("cat-big-katsuyo", "cat-big-appropriate", "cat-big-characteristic");
+      var popupCatCls = bigCategoryClassName(item.big_category);
+      if (popupCatCls) popupContent.classList.add(popupCatCls);
+    }
     popupEl.classList.add("is-open");
     popupEl.setAttribute("aria-hidden", "false");
     document.body.style.overflow = "hidden";
@@ -1464,6 +1552,8 @@ body {
   }
 
   function closePopup() {
+    var popupContent = popupEl.querySelector(".popup-content");
+    if (popupContent) popupContent.classList.remove("cat-big-katsuyo", "cat-big-appropriate", "cat-big-characteristic");
     popupEl.classList.remove("is-open");
     popupEl.setAttribute("aria-hidden", "true");
     document.body.style.overflow = "";
@@ -1732,6 +1822,7 @@ body {
     touchDragWrap = null;
     touchDragIndex = null;
     touchIsDragging = false;
+    touchScrollIntent = false;
   }
 
   /* タブレット用：一覧コンテナにタッチを1セットだけ委譲（PCでは呼ばず負荷ゼロ） */
@@ -1754,17 +1845,33 @@ body {
     galleryEl.addEventListener("touchmove", function (e) {
       if (e.touches.length !== 1 || touchDragIndex === null) return;
       var t = e.touches[0];
-      lastTouchX = t.clientX;
-      lastTouchY = t.clientY;
+      if (touchScrollIntent) {
+        window.scrollBy(0, t.clientY - lastTouchY);
+        lastTouchX = t.clientX;
+        lastTouchY = t.clientY;
+        e.preventDefault();
+        return;
+      }
       if (!touchIsDragging) {
         var dx = t.clientX - touchDragStartX;
         var dy = t.clientY - touchDragStartY;
-        if (dx * dx + dy * dy > TOUCH_DRAG_THRESHOLD * TOUCH_DRAG_THRESHOLD) {
+        var distSq = dx * dx + dy * dy;
+        if (distSq > TOUCH_DRAG_THRESHOLD * TOUCH_DRAG_THRESHOLD) {
+          if (Math.abs(dy) > Math.abs(dx)) {
+            touchScrollIntent = true;
+            window.scrollBy(0, dy);
+            lastTouchX = t.clientX;
+            lastTouchY = t.clientY;
+            e.preventDefault();
+            return;
+          }
           touchIsDragging = true;
           if (touchDragWrap) touchDragWrap.classList.add("is-touch-dragging");
         }
       }
       if (touchIsDragging) {
+        lastTouchX = t.clientX;
+        lastTouchY = t.clientY;
         e.preventDefault();
         clearDropzoneOverState();
         var dz = getDropzoneAt(t.clientX, t.clientY);
@@ -1781,11 +1888,11 @@ body {
           addCardToDropzoneByIndex(dz, touchDragIndex);
           skipNextClick = true;
         }
-      } else if (touchDragIndex !== null && data[touchDragIndex]) {
+      } else if (!touchScrollIntent && touchDragIndex !== null && data[touchDragIndex]) {
         openPopup(data[touchDragIndex]);
         skipNextClick = true;
       }
-      if (wasDrag || touchDragIndex !== null) e.preventDefault();
+      if (wasDrag || touchScrollIntent || touchDragIndex !== null) e.preventDefault();
       clearTouchDragState();
     }, { passive: false });
     galleryEl.addEventListener("touchcancel", function () {
@@ -1877,6 +1984,8 @@ body {
   function createPlannerCard(item, onRemoveFromOther) {
     var card = document.createElement("div");
     card.className = "planner-card";
+    var bigCls = bigCategoryClassName(item.big_category);
+    if (bigCls) card.classList.add(bigCls);
     card.__item = item;
     var thumb = document.createElement("div");
     thumb.className = "planner-card-thumb";
@@ -1928,6 +2037,8 @@ body {
   function createGalleryButton(item, index) {
       var wrap = document.createElement(isSafari ? "div" : "button");
       wrap.className = "gallery-item" + (isSafari ? " gallery-item-draggable-div" : "");
+      var bigCls = bigCategoryClassName(item.big_category);
+      if (bigCls) wrap.classList.add(bigCls);
       var displayTitle = item.title || item.lesson_plan || "";
       wrap.setAttribute("aria-label", displayTitle + "の説明を見る");
       if (isSafari) {
@@ -2016,20 +2127,33 @@ body {
     else if (currentGalleryMode === "view") fieldName = "viewpoint";
     var groups = {};
     items.forEach(function (item, index) {
-      var key = (item[fieldName] || "").trim();
-      if (!key) key = "（未分類）";
-      if (!groups[key]) groups[key] = [];
-      groups[key].push({ item: item, index: index });
+      var rawKey = (item[fieldName] || "").trim();
+      if (!rawKey) rawKey = "（未分類）";
+      if (fieldName === "big_category") rawKey = normalizeBigCategory(rawKey);
+      if (!groups[rawKey]) groups[rawKey] = [];
+      groups[rawKey].push({ item: item, index: index });
     });
-    Object.keys(groups).sort().forEach(function (key) {
+    var groupKeys = Object.keys(groups);
+    if (fieldName === "big_category") {
+      var order = { "活用": 1, "適切な取り扱い": 2, "特性の理解": 3 };
+      groupKeys.sort(function (a, b) {
+        var ai = order[a] || 999;
+        var bi = order[b] || 999;
+        if (ai !== bi) return ai - bi;
+        return a.localeCompare(b, "ja");
+      });
+    } else {
+      groupKeys.sort(function (a, b) { return a.localeCompare(b, "ja"); });
+    }
+    groupKeys.forEach(function (rawKey) {
       var section = document.createElement("section");
       section.className = "gallery-group";
       var title = document.createElement("h3");
       title.className = "gallery-group-title";
-      title.textContent = key;
+      title.textContent = fieldName === "big_category" ? bigCategoryDisplayName(rawKey) : rawKey;
       var inner = document.createElement("div");
       inner.className = "gallery gallery-group-inner";
-      groups[key].forEach(function (entry) {
+      groups[rawKey].forEach(function (entry) {
         inner.appendChild(createGalleryButton(entry.item, entry.index));
       });
       section.appendChild(title);
@@ -2078,40 +2202,53 @@ body {
       else if (currentGalleryMode === "view") fieldName = "viewpoint";
       var groups = {};
       items.forEach(function (item, index) {
-        var key = (item[fieldName] || "").trim();
-        if (!key) key = "（未分類）";
-        if (!groups[key]) groups[key] = [];
-        groups[key].push({ item: item, index: index });
+        var rawKey = (item[fieldName] || "").trim();
+        if (!rawKey) rawKey = "（未分類）";
+        if (fieldName === "big_category") rawKey = normalizeBigCategory(rawKey);
+        if (!groups[rawKey]) groups[rawKey] = [];
+        groups[rawKey].push({ item: item, index: index });
       });
-      Object.keys(groups).sort().forEach(function (key) {
+      var groupKeys = Object.keys(groups);
+      if (fieldName === "big_category") {
+        var order = { "活用": 1, "適切な取り扱い": 2, "特性の理解": 3 };
+        groupKeys.sort(function (a, b) {
+          var ai = order[a] || 999;
+          var bi = order[b] || 999;
+          if (ai !== bi) return ai - bi;
+          return a.localeCompare(b, "ja");
+        });
+      } else {
+        groupKeys.sort(function (a, b) { return a.localeCompare(b, "ja"); });
+      }
+      groupKeys.forEach(function (rawKey) {
         // グループ見出し（チェック付き）
         var titleEl = document.createElement("label");
         titleEl.className = "print-select-group-title";
-        titleEl.dataset.group = key;
+        titleEl.dataset.group = rawKey;
         var groupCb = document.createElement("input");
         groupCb.type = "checkbox";
         groupCb.className = "print-select-group-checkbox";
-        groupCb.dataset.group = key;
+        groupCb.dataset.group = rawKey;
         groupCb.checked = true;
         var titleSpan = document.createElement("span");
-        titleSpan.textContent = key;
+        titleSpan.textContent = fieldName === "big_category" ? bigCategoryDisplayName(rawKey) : rawKey;
         titleEl.appendChild(groupCb);
         titleEl.appendChild(titleSpan);
         printSelectList.appendChild(titleEl);
         // グループ内のアイテム
-        groups[key].forEach(function (entry) {
+        groups[rawKey].forEach(function (entry) {
           var item = entry.item;
           var index = entry.index;
           var itemEl = document.createElement("div");
           itemEl.className = "print-select-item";
-          itemEl.dataset.group = key;
+          itemEl.dataset.group = rawKey;
           var label = document.createElement("label");
           label.className = "print-select-label";
           var cb = document.createElement("input");
           cb.type = "checkbox";
           cb.className = "print-select-checkbox";
           cb.dataset.index = String(index);
-          cb.dataset.group = key;
+          cb.dataset.group = rawKey;
           var thumb = document.createElement("div");
           thumb.className = "print-select-thumb";
           if (item.image) {
@@ -2222,6 +2359,8 @@ body {
   function createPrintItem(item) {
     var wrap = document.createElement("div");
     wrap.className = "print-item";
+    var bigCls = bigCategoryClassName(item.big_category);
+    if (bigCls) wrap.classList.add(bigCls);
     var inner = document.createElement("div");
     inner.className = "popup-inner";
     var displayTitle = item.title || item.lesson_plan || "";
@@ -2283,7 +2422,7 @@ body {
       imgWrap.appendChild(noImg);
     }
     var cats = [];
-    if (item.big_category) cats.push(item.big_category);
+    if (item.big_category) cats.push(bigCategoryDisplayName(item.big_category));
     if (item.middle_category) cats.push(item.middle_category);
     if (item.small_category) cats.push(item.small_category);
     if (item.viewpoint) cats.push(item.viewpoint);
